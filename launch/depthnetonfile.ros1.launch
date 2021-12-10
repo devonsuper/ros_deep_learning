@@ -6,7 +6,7 @@
 	<arg name="image_folder"/>
 
     <!-- power settings -->
-    <arg name="power_mode"/>
+    <arg name="power_mode" default="2"/>
     <node name="powermode" pkg="ros_deep_learning" type="setpowermode" args="$(arg power_mode)" output="screen" />
 
     <!-- depthnet -->
@@ -27,13 +27,13 @@
     <!-- image folder publisher -->
 	<node pkg="image_folder_publisher" type="image_folder_publisher.py" name="image_folder_publisher" launch-prefix="bash -c 'sleep 20.0; $0 $@' " required="true">
 		<param name="topic_name" value="/depthnet/image_in"/>
-		<param name="publish_rate" value="1"/>
+		<param name="publish_rate" value="5"/>
 		<param name="image_folder" value="$(arg image_folder)"/>
-		<param name="loop" value="3"/> <!-- sometimes first one isn't caught. using a few to be safe-->
+		<param name="loop" value="1"/> <!-- sometimes first one isn't caught. using a few to be safe-->
 	</node>
 
 		<!-- VIDEO OUTPUT -->
-	<arg name="output" default="file://$(arg image_folder)/$(arg precision)_power$(arg power_mode)/result.jpg"/>
+	<arg name="output" default="file://$(arg image_folder)/$(arg precision)_power$(arg power_mode)/movie.mp4"/><!-- /result.jpg -->
 	<arg name="output_codec" default="unknown"/>
 	<arg name="output_bitrate" default="0"/>
 

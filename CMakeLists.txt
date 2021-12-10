@@ -29,6 +29,8 @@ if( catkin_FOUND )
 		sensor_msgs
 		vision_msgs
 		std_msgs
+		# cv_bridge
+		# OpenCV
 	)
 	 
 	catkin_package(

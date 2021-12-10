@@ -8,16 +8,17 @@
 #include "ros_compat.h"
 #include "image_converter.h"
 
-#include "std_msgs/Float32MultiArray.h"
-#include "std_msgs/MultiArrayDimension.h"
+#include <opencv2/highgui/highgui.hpp>
+#include <cv_bridge/cv_bridge.h>
 
 //globals
 depthNet* net = NULL;
 
 imageConverter* input_cvt = NULL;
 imageConverter* visualization_cvt = NULL;
+imageConverter* depth_cvt = NULL;
 
-Publisher<std_msgs::Float32MultiArray> depth_pub = NULL;
+Publisher<sensor_msgs::Image> depth_pub = NULL;
 Publisher<sensor_msgs::Image> visualization_pub = NULL;
 
 int batchsize = 1;
@@ -29,6 +30,7 @@ int imagecount = 0;
 //in milliseconds
 double preprocesstime = 0.0;
 double processtime = 0.0;
+double publishtime = 0.0;
 
 //from https://answers.ros.org/question/166286/measure-codenode-running-time/
 //used by startTimer() and stopTimer()
@@ -55,35 +57,41 @@ void publish_depths(){
     int height = net->GetDepthFieldHeight();
     int width = net->GetDepthFieldWidth();
 
-    std_msgs::Float32MultiArray msg;
+    uint8_t *uint8_depth_pointer    = reinterpret_cast<uint8_t*>((float*)depths); //convert float data from model to ints
 
-    //from https://answers.ros.org/question/234028/how-to-publish-a-2-dimensional-array-of-known-values/
-    //TODO unclear if this implementation works with ROS2
+    //from https://gist.github.com/knorth55/007fab438d0c790b47c9de4ed76a9c29 and https://answers.ros.org/question/195979/creating-sensor_msgsimage-from-scratch/
+    sensor_msgs::Image msg;
+    msg.header.stamp     = ros::Time::now();
+    msg.height           = height;
+    msg.width            = width;
+    msg.encoding         = "32FC1";
+    msg.is_bigendian     = false;
+    msg.step             = width * 4; // 32 bit float turns into 4 8 bit ints
 
-    //construct msg dimensions
-    msg.layout.dim.push_back(std_msgs::MultiArrayDimension());
-    msg.layout.dim.push_back(std_msgs::MultiArrayDimension());
-    msg.layout.dim[0].label = "height";
-    msg.layout.dim[1].label = "width";
-    msg.layout.dim[0].size = height;
-    msg.layout.dim[1].size = width;
-    msg.layout.dim[0].stride = height*width;
-    msg.layout.dim[1].stride = width;
-    msg.layout.data_offset = 0;
+    msg.data.clear();
 
-    //load depths onto msg
-    std::vector<float> vec( depths, depths + (width*height) );
+    msg.data = std::vector<uint8_t>(uint8_depth_pointer, uint8_depth_pointer + (width * height * 4));
 
-    msg.data = vec;
-
-    //TODO create wrapper for msg so that values like header can be added.
-    //populate timestamp
-    //msg.header.stamp = ROS_TIME_NOW();
-
-    //publish
     depth_pub->publish(msg);
-
 }
+
+
+
+//     //from https://stackoverflow.com/questions/27080085/how-to-convert-a-cvmat-into-a-sensor-msgs-in-ros
+//     sensor_msgs::Image msg;
+
+//     cv::Mat img = cv::Mat(height, width, CV_32F, &depths); //from https://stackoverflow.com/questions/22739320/how-can-i-initialize-a-cvmat-with-data-from-a-float-array
+//     cv_bridge::CvImage img_bridge;
+
+//     img_bridge = cv_bridge::CvImage(std_msgs::Header(), "32FC1", img);
+//     img_bridge.toImageMsg(msg);
+
+// 	// populate timestamp in header field
+// 	msg.header.stamp = ROS_TIME_NOW();
+
+// 	// publish the message
+// 	depth_pub->publish(msg);
+// }
 
 // publish visualization
 bool publish_visualization( uint32_t width, uint32_t height )
@@ -125,27 +133,33 @@ void img_callback( const sensor_msgs::ImageConstPtr input )
 
     startTimer();
 
-    //ROS_INFO("Processing image %u", imagecount);
+    ROS_INFO("Processing image %u", imagecount);
 
-   // process the depth network
-   if( !net->Process(input_cvt->ImageGPU(), input_cvt->GetWidth(), input_cvt->GetHeight()) )
-   {
-       ROS_ERROR("failed to process depth perception on %ux%u image", input->width, input->height);
-       return;
-   }
-   processtime += stopTimer();
+    // process the depth network
+    if( !net->Process(input_cvt->ImageGPU(), input_cvt->GetWidth(), input_cvt->GetHeight()) )
+    {
+        ROS_ERROR("failed to process depth perception on %ux%u image", input->width, input->height);
+        return;
+    }
+    processtime += stopTimer();
 
     if( ROS_NUM_SUBSCRIBERS(depth_pub) > 0 ){
         ROS_INFO("publishing image %u", imagecount);
+        
+        startTimer();
+        publish_depths();
+        publishtime += stopTimer();
+
+
         if(measure_time){
             float avgppt = (preprocesstime/imagecount);
             float avgpt = (processtime/imagecount);
+            float avgput = (publishtime/imagecount);
 
             ROS_INFO("      average preprocessing time: %fms", avgppt);
             ROS_INFO("      average processing time: %fms", avgpt);
+            ROS_INFO("      average publish time: %fms", avgput);
         }
-
-        publish_depths();
     }
 
     if( ROS_NUM_SUBSCRIBERS(visualization_pub) > 0  && visualize){
@@ -206,15 +220,16 @@ int main(int argc, char **argv)
 
     input_cvt              = new imageConverter();
     visualization_cvt      = new imageConverter();
+    depth_cvt              = new imageConverter();
 
-	if( !input_cvt || !visualization_cvt  )
+	if( !input_cvt || !visualization_cvt || !depth_cvt )
 	{
 		ROS_ERROR("failed to create imageConverter objects");
 		return 0;
 	}
 
     //announce publishing topics
-    ROS_CREATE_PUBLISHER(std_msgs::Float32MultiArray, "depth", 2000, depth_pub); //TODO find a good queue size.
+    ROS_CREATE_PUBLISHER(sensor_msgs::Image, "depth", 2000, depth_pub); //TODO find a good queue size.
     ROS_CREATE_PUBLISHER(sensor_msgs::Image, "visualization", 30, visualization_pub);
 
 
