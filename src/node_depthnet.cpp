@@ -11,7 +11,6 @@
 #include "std_msgs/Float32MultiArray.h"
 #include "std_msgs/MultiArrayDimension.h"
 
-
 //globals
 depthNet* net = NULL;
 
@@ -22,10 +21,32 @@ Publisher<std_msgs::Float32MultiArray> depth_pub = NULL;
 Publisher<sensor_msgs::Image> visualization_pub = NULL;
 
 int batchsize = 1;
-bool visualize;
+bool visualize = false;
+bool measure_time = true;
 
-
+//measuring performance
 int imagecount = 0;
+//in milliseconds
+double preprocesstime = 0.0;
+double processtime = 0.0;
+
+//from https://answers.ros.org/question/166286/measure-codenode-running-time/
+//used by startTimer() and stopTimer()
+ros::WallTime start_, end_;
+
+//sets value of time. user stopTimer() to retrieve elapsed time.
+void startTimer(){
+    start_ = ros::WallTime::now();
+}
+
+int stopTimer(){
+    end_ = ros::WallTime::now();
+    double execution_time = (end_ - start_).toNSec() * 1e-6;
+
+    return execution_time;
+}
+
+
 
 //publish raw depth data
 void publish_depths(){
@@ -92,16 +113,19 @@ bool publish_visualization( uint32_t width, uint32_t height )
 void img_callback( const sensor_msgs::ImageConstPtr input )
 {
     imagecount++;
-    int c = imagecount;
 
-   // convert the image to reside on GPU
-   if( !input_cvt || !input_cvt->Convert(input) )
-   {
-       ROS_INFO("failed to convert %ux%u %s image", net->GetDepthFieldWidth(), net->GetDepthFieldHeight(), input->encoding.c_str());
-       return;
-   }
-   
-    ROS_INFO("Processing image %u", imagecount);
+    startTimer();
+    // convert the image to reside on GPU
+    if( !input_cvt || !input_cvt->Convert(input) )
+    {
+        ROS_INFO("failed to convert %ux%u %s image", net->GetDepthFieldWidth(), net->GetDepthFieldHeight(), input->encoding.c_str());
+        return;
+    }
+    preprocesstime += stopTimer();
+
+    startTimer();
+
+    //ROS_INFO("Processing image %u", imagecount);
 
    // process the depth network
    if( !net->Process(input_cvt->ImageGPU(), input_cvt->GetWidth(), input_cvt->GetHeight()) )
@@ -109,9 +133,17 @@ void img_callback( const sensor_msgs::ImageConstPtr input )
        ROS_ERROR("failed to process depth perception on %ux%u image", input->width, input->height);
        return;
    }
+   processtime += stopTimer();
 
     if( ROS_NUM_SUBSCRIBERS(depth_pub) > 0 ){
         ROS_INFO("publishing image %u", imagecount);
+        if(measure_time){
+            float avgppt = (preprocesstime/imagecount);
+            float avgpt = (processtime/imagecount);
+
+            ROS_INFO("      average preprocessing time: %fms", avgppt);
+            ROS_INFO("      average processing time: %fms", avgpt);
+        }
 
         publish_depths();
     }
@@ -119,6 +151,7 @@ void img_callback( const sensor_msgs::ImageConstPtr input )
     if( ROS_NUM_SUBSCRIBERS(visualization_pub) > 0  && visualize){
         publish_visualization(input_cvt->GetWidth(), input_cvt->GetHeight());
     }
+
 }
 
 
@@ -143,6 +176,7 @@ int main(int argc, char **argv)
     ROS_DECLARE_PARAMETER("output_blob", output_blob);
     ROS_DECLARE_PARAMETER("precision", precisionstring);
     ROS_DECLARE_PARAMETER("visualize", visualize);
+    ROS_DECLARE_PARAMETER("measure_time", measure_time);
 
     //retrieve parameters
     ROS_GET_PARAMETER("model_path", model_path);
@@ -150,6 +184,7 @@ int main(int argc, char **argv)
     ROS_GET_PARAMETER("output_blob", output_blob);
     ROS_GET_PARAMETER("precision", precisionstring);
     ROS_GET_PARAMETER("visualize", visualize);
+    ROS_GET_PARAMETER("measure_time", measure_time);
 
 
     if(model_path.size() > 0){

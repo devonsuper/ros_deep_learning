@@ -7,7 +7,7 @@ cd "$(rospack find ros_deep_learning)"
 outputfolder="experiment/hz"
 file="${outputfolder}/$3hz/$1_power$2_$3hz.txt"
 
-window=`expr $3 \* 10`; #try 150 for window
+window=150 #`expr $3 \* 10`; #try 150 for window
 
 mkdir experiment
 mkdir experiment/hz

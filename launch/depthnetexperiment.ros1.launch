@@ -14,7 +14,7 @@
 	<arg name="precision"/>
 	<arg name="visualize" default="false"/>
 
-	<node pkg="ros_deep_learning" type="depthnet" name="depthnet" output="log">
+	<node pkg="ros_deep_learning" type="depthnet" name="depthnet" output="screen">
 		<param name="model_path" value="$(arg model_path)"/>
 		<param name="input_blob" value="$(arg input_blob)"/>
 		<param name="output_blob" value="$(arg output_blob)"/> 
@@ -33,7 +33,7 @@
 	</node>
 
 
-	<arg name="log_start_delay" default="10.0"/>
+	<arg name="log_start_delay" default="15.0"/>
     <!-- rostopic hz with 10 second delay -->
     <node name="loghz" pkg="ros_deep_learning" type="loghz" args="$(arg precision) $(arg power_mode) $(arg publish_rate)" output="screen" launch-prefix="bash -c 'sleep $(arg log_start_delay); $0 $@' "/><!-- delay is from https://answers.ros.org/question/233353/set-delay-between-starting-nodes-within-launch-file/ -->
 
