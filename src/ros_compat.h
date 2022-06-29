@@ -80,17 +80,22 @@ template<typename T> static void __ros_declare_parameter( ros::NodeHandle& nh, c
 #include <sensor_msgs/msg/image.hpp>
 #include <sensor_msgs/image_encodings.hpp>
 
-#if ROS_DISTRO == ROS_FOXY || ROS_DISTRO == ROS_GALACTIC
-	#include <vision_msgs/msg/classification2_d.hpp>
+#if ROS_DISTRO >= ROS_GALACTIC
+	#include <vision_msgs/msg/classification.hpp>
 #else
 	#include <vision_msgs/msg/classification2_d.hpp>
+#endif
 
 #include <vision_msgs/msg/detection2_d_array.hpp>
 #include <vision_msgs/msg/vision_info.hpp>
 
 namespace vision_msgs
 {
+#if ROS_DISTRO >= ROS_GALACTIC
+	typedef msg::Classification   Classification2D;
+#else
 	typedef msg::Classification2D Classification2D;
+#endif
 	typedef msg::Detection2D		Detection2D;
 	typedef msg::Detection2DArray Detection2DArray;
 	typedef msg::ObjectHypothesis ObjectHypothesis;

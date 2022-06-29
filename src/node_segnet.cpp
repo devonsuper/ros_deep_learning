@@ -191,7 +191,7 @@ int main(int argc, char **argv)
 	ROS_DECLARE_PARAMETER("model_path", model_path);
 	ROS_DECLARE_PARAMETER("prototxt_path", prototxt_path);
 	ROS_DECLARE_PARAMETER("class_labels_path", class_labels_path);
-	ROS_DECLARE_PARAMETER("class_colors_path", class_labels_path);
+	ROS_DECLARE_PARAMETER("class_colors_path", class_colors_path);
 	ROS_DECLARE_PARAMETER("input_blob", input_blob);
 	ROS_DECLARE_PARAMETER("output_blob", output_blob);
 	ROS_DECLARE_PARAMETER("mask_filter", mask_filter_str);
@@ -205,7 +205,7 @@ int main(int argc, char **argv)
 	ROS_GET_PARAMETER("model_path", model_path);
 	ROS_GET_PARAMETER("prototxt_path", prototxt_path);
 	ROS_GET_PARAMETER("class_labels_path", class_labels_path);
-	ROS_GET_PARAMETER("class_colors_path", class_labels_path);
+	ROS_GET_PARAMETER("class_colors_path", class_colors_path);
 	ROS_GET_PARAMETER("input_blob", input_blob);
 	ROS_GET_PARAMETER("output_blob", output_blob);
 	ROS_GET_PARAMETER("mask_filter", mask_filter_str);
@@ -222,6 +222,7 @@ int main(int argc, char **argv)
 	if( model_path.size() > 0 )
 	{
 		// create network using custom model paths
+        //TODO here's where the model gets loaded
 		net = segNet::Create(prototxt_path.c_str(), model_path.c_str(), 
 						 class_labels_path.c_str(), class_colors_path.c_str(), 
 						 input_blob.c_str(), output_blob.c_str());

@@ -14,7 +14,9 @@ find_package(catkin QUIET)
 # detect ROS version
 string(TOUPPER $ENV{ROS_DISTRO} ROS_DISTRO)
 set(ROS_DISTRO "ROS_${ROS_DISTRO}")
-message("detected ${ROS_DISTRO}")
+message("detected ROS_DISTRO=${ROS_DISTRO}")
+
+link_directories(/usr/lib/aarch64-linux-gnu/tegra)
 
 if( catkin_FOUND )
 	message("detected ROS1 (catkin_make)")
@@ -60,6 +62,12 @@ else()
 	endif()
 endif()
 
+#models folder
+set(models models)
+
+#jetson utils libs
+set(jetlibs cudaColormap.h)
+
 # sources shared across nodes
 set(common_src src/image_converter.cpp src/ros_compat.cpp)
 
@@ -72,6 +80,9 @@ target_link_libraries(detectnet ${catkin_LIBRARIES} jetson-inference)
 
 add_executable(segnet src/node_segnet.cpp ${common_src})
 target_link_libraries(segnet ${catkin_LIBRARIES} jetson-inference)
+
+add_executable(depthnet src/node_depthnet.cpp ${common_src} )
+target_link_libraries(depthnet ${catkin_LIBRARIES} jetson-inference jetson-utils)
 
 add_executable(video_source src/node_video_source.cpp ${common_src})
 target_link_libraries(video_source ${catkin_LIBRARIES} jetson-inference)
@@ -107,4 +118,7 @@ else()
 	ament_package()
 endif()
 
-
+# from turtlesim tutorial https://github.com/ros/ros_tutorials/blob/noetic-devel/turtlesim/CMakeLists.txt
+install(DIRECTORY models
+  DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
+  FILES_MATCHING PATTERN "*.onnx" PATTERN "*.engine")

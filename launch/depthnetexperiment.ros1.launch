@@ -1,0 +1,40 @@
+<launch>
+
+    <!-- power settings -->
+    <arg name="power_mode"/>
+    <node name="powermode" pkg="ros_deep_learning" type="setpowermode" args="$(arg power_mode)" output="screen" />
+
+	<!-- input image -->
+	<arg name="image_folder"/>
+
+    <!-- depthnet -->
+	<arg name="model_path" default="$(find ros_deep_learning)/models/mono_1024x320.simplified.onnx"/>  
+	<arg name="input_blob" default="input"/>
+	<arg name="output_blob" default="output"/>
+	<arg name="precision"/>
+	<arg name="visualize" default="false"/>
+
+	<node pkg="ros_deep_learning" type="depthnet" name="depthnet" output="log">
+		<param name="model_path" value="$(arg model_path)"/>
+		<param name="input_blob" value="$(arg input_blob)"/>
+		<param name="output_blob" value="$(arg output_blob)"/> 
+		<param name="precision" value="$(arg precision)"/>
+		<param name="visualize" type="bool" value="$(arg visualize)"/>
+	</node>
+
+    <!-- image folder publisher -->
+    <arg name="publish_rate" default="30"/>
+
+	<node pkg="image_folder_publisher" type="image_folder_publisher.py" name="image_folder_publisher" required="true" output="screen">
+		<param name="topic_name" value="/depthnet/image_in"/>
+		<param name="publish_rate" value="$(arg publish_rate)"/>
+		<param name="image_folder" value="$(arg image_folder)"/>
+		<param name="loop" value="1"/>
+	</node>
+
+
+	<arg name="log_start_delay" default="10.0"/>
+    <!-- rostopic hz with 10 second delay -->
+    <node name="loghz" pkg="ros_deep_learning" type="loghz" args="$(arg precision) $(arg power_mode) $(arg publish_rate)" output="screen" launch-prefix="bash -c 'sleep $(arg log_start_delay); $0 $@' "/><!-- delay is from https://answers.ros.org/question/233353/set-delay-between-starting-nodes-within-launch-file/ -->
+
+</launch>
