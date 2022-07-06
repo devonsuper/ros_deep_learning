@@ -25,7 +25,7 @@
 
 	<node pkg="ros_deep_learning" type="depthnet" name="depthnet" output="screen">
 		<remap from="/depthnet/image_in" to="/video_source/raw"/>
-		<!-- <remap from="/depthnet/visualization" to="/video_output/image_in"/> -->
+		<remap from="/depthnet/visualization" to="/video_output/image_in"/>
 		<param name="model_path" value="$(arg model_path)"/>
 		<param name="input_blob" value="$(arg input_blob)"/>
 		<param name="output_blob" value="$(arg output_blob)"/> 

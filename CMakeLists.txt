@@ -29,8 +29,6 @@ if( catkin_FOUND )
 		sensor_msgs
 		vision_msgs
 		std_msgs
-		# cv_bridge
-		# OpenCV
 	)
 	 
 	catkin_package(
@@ -63,12 +61,6 @@ else()
 		message(FATAL_ERROR "could not find either ROS1 (catkin_make) or ROS2 (ament_cmake) packages")
 	endif()
 endif()
-
-#models folder
-set(models models)
-
-#jetson utils libs
-set(jetlibs cudaColormap.h)
 
 # sources shared across nodes
 set(common_src src/image_converter.cpp src/ros_compat.cpp)
@@ -120,7 +112,3 @@ else()
 	ament_package()
 endif()
 
-# from turtlesim tutorial https://github.com/ros/ros_tutorials/blob/noetic-devel/turtlesim/CMakeLists.txt
-install(DIRECTORY models
-  DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
-  FILES_MATCHING PATTERN "*.onnx" PATTERN "*.engine")

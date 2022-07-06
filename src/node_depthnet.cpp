@@ -23,7 +23,7 @@ Publisher<sensor_msgs::Image> visualization_pub = NULL;
 
 int batchsize = 1;
 bool visualize = false;
-bool measure_time = true;
+bool measure_time = false;
 
 //measuring performance
 int imagecount = 0;
@@ -229,7 +229,7 @@ int main(int argc, char **argv)
 	}
 
     //announce publishing topics
-    ROS_CREATE_PUBLISHER(sensor_msgs::Image, "depth", 2000, depth_pub); //TODO find a good queue size.
+    ROS_CREATE_PUBLISHER(sensor_msgs::Image, "depth", 30, depth_pub); //TODO find a good queue size.
     ROS_CREATE_PUBLISHER(sensor_msgs::Image, "visualization", 30, visualization_pub);
 
 
