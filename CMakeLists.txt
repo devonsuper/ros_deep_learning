@@ -18,6 +18,9 @@ message("detected ROS_DISTRO=${ROS_DISTRO}")
 
 link_directories(/usr/lib/aarch64-linux-gnu/tegra)
 
+find_package (OpenCV 4.0.0 REQUIRED)
+include_directories ("/usr/include/opencv4/")
+
 if( catkin_FOUND )
 	message("detected ROS1 (catkin_make)")
 	
