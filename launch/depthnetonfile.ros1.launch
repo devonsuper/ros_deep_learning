@@ -33,7 +33,7 @@
 	</node>
 
 		<!-- VIDEO OUTPUT -->
-	<arg name="output" default="file://$(arg image_folder)/$(arg precision)_power$(arg power_mode)/movie.mp4"/><!-- /result.jpg -->
+	<arg name="output" default="file://$(arg image_folder)/$(arg precision)_power$(arg power_mode)/result.jpg"/>
 	<arg name="output_codec" default="unknown"/>
 	<arg name="output_bitrate" default="0"/>
 
